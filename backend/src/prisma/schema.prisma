@@ -1,0 +1,120 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  tenant
+  owner
+  admin
+}
+
+enum PropertyType {
+  room
+  flat
+  pg
+  house
+}
+
+enum PropertyStatus {
+  pending
+  approved
+  rejected
+  suspended
+}
+
+enum ReportStatus {
+  open
+  resolved
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  phone        String   @unique
+  email        String?  @unique
+  passwordHash String
+  role         Role
+  isVerified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  properties        Property[]
+  enquiriesAsTenant Enquiry[]  @relation("TenantEnquiries")
+  reports           Report[]
+}
+
+model Property {
+  id              String         @id @default(uuid())
+  ownerId         String
+  owner           User           @relation(fields: [ownerId], references: [id])
+  title           String
+  description     String
+  type            PropertyType
+  rent            Decimal
+  deposit         Decimal
+  latitude        Float
+  longitude       Float
+  address         String
+  landmarks       String[]
+  amenities       String[]
+  status          PropertyStatus @default(pending)
+  rejectionReason String?
+  viewCount       Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  photos    PropertyPhoto[]
+  enquiries Enquiry[]
+  reports   Report[]
+
+  @@index([ownerId])
+  @@index([status])
+}
+
+model PropertyPhoto {
+  id         String   @id @default(uuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url        String
+  sortOrder  Int      @default(0)
+}
+
+model Enquiry {
+  id                String   @id @default(uuid())
+  propertyId        String
+  property          Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenantId          String
+  tenant            User     @relation("TenantEnquiries", fields: [tenantId], references: [id], onDelete: Cascade)
+  contactRevealedAt DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  @@index([propertyId])
+  @@index([tenantId])
+}
+
+model Report {
+  id         String       @id @default(uuid())
+  propertyId String
+  property   Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  reportedBy String
+  reporter   User         @relation(fields: [reportedBy], references: [id], onDelete: Cascade)
+  reason     String
+  status     ReportStatus @default(open)
+  createdAt  DateTime     @default(now())
+  resolvedAt DateTime?
+}
+
+model AdminAction {
+  id           String   @id @default(uuid())
+  adminId      String
+  propertyId   String?
+  targetUserId String?
+  action       String   // 'approve' | 'reject' | 'suspend_listing' | 'suspend_user'
+  reason       String?
+  createdAt    DateTime @default(now())
+}
