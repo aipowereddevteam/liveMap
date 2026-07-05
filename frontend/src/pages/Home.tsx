@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import { MapSearch } from '../components/MapSearch';
-import { Search, Compass, MapPin, Eye } from 'lucide-react';
+import { Search, Compass, MapPin } from 'lucide-react';
 
 interface Property {
   id: string;
