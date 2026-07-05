@@ -110,7 +110,7 @@ export const ListingDetail: React.FC = () => {
 
     const propertyIcon = L.divIcon({
       className: 'property-pin-icon',
-      html: `<div style="background-color: #7c66ff; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px #7c66ff;"></div>`,
+      html: `<div style="background-color: #10b981; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px #10b981;"></div>`,
       iconSize: [18, 18],
       iconAnchor: [9, 9],
     });

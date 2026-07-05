@@ -34,6 +34,10 @@ export const MapSearch: React.FC<MapSearchProps> = ({
   const circleRef = useRef<L.Circle | null>(null);
   const centerMarkerRef = useRef<L.Marker | null>(null);
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
+  const currentUserMarkerRef = useRef<L.Marker | null>(null);
+
+  // User Actual Geolocation position state
+  const [currentUserLocation, setCurrentUserLocation] = useState<[number, number] | null>(null);
 
   // Map Tile Style State
   const [mapStyle, setMapStyle] = useState<'dark' | 'light'>('light'); // default to standard colored map
@@ -72,6 +76,7 @@ export const MapSearch: React.FC<MapSearchProps> = ({
         mapRef.current.remove();
         mapRef.current = null;
       }
+      currentUserMarkerRef.current = null;
     };
   }, []);
 
@@ -122,6 +127,7 @@ export const MapSearch: React.FC<MapSearchProps> = ({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        setCurrentUserLocation([latitude, longitude]);
         onLocationChange(latitude, longitude);
 
         if (mapRef.current) {
@@ -175,6 +181,38 @@ export const MapSearch: React.FC<MapSearchProps> = ({
     map.setView(center, map.getZoom());
   }, [center, radiusKm]);
 
+  // Update User actual geolocated Position Marker (Purple pulsing dot like Google Maps)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !currentUserLocation) return;
+
+    const purpleDotIcon = L.divIcon({
+      className: 'user-location-pulse-icon',
+      html: `
+        <div style="background-color: #7c66ff; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 14px #7c66ff; position: relative; display: flex; align-items: center; justify-content: center;">
+          <div style="
+            position: absolute; 
+            width: 16px; 
+            height: 16px; 
+            border-radius: 50%; 
+            background-color: #7c66ff; 
+            opacity: 0.4; 
+            transform: scale(1); 
+            animation: pingDot 2s infinite ease-in-out;
+          "></div>
+        </div>
+      `,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    });
+
+    if (currentUserMarkerRef.current) {
+      currentUserMarkerRef.current.setLatLng(currentUserLocation);
+    } else {
+      currentUserMarkerRef.current = L.marker(currentUserLocation, { icon: purpleDotIcon }).addTo(map);
+    }
+  }, [currentUserLocation]);
+
   // Update Property Markers
   useEffect(() => {
     const map = mapRef.current;
@@ -216,6 +254,12 @@ export const MapSearch: React.FC<MapSearchProps> = ({
 
   return (
     <div className="map-container-wrapper" style={{ width: '100%', height: '100%' }}>
+      <style>{`
+        @keyframes pingDot {
+          0% { transform: scale(1); opacity: 0.4; }
+          100% { transform: scale(2.8); opacity: 0; }
+        }
+      `}</style>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
       {interactive && (
         <div
